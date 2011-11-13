@@ -7,7 +7,7 @@ public interface SWObject {
 	
 	public void externalForces(double x, double y);
 	
-	public void step(double t);
+	public void step();
 	
 
 

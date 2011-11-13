@@ -28,14 +28,15 @@ public class Sun implements SWObject {
 
 
 	@Override
-	public void step(double t) {
+	public void step() {
 		return;
 	}
 
 	
 	public boolean collision(int x, int y)
 	{
-		if(((x*x)/(100) + (y*y) / (100)) < 1)
+
+		if(((x*x)/(100) + (y*y) / (100)) <= 1)
 			return true;
 		return false;
 		

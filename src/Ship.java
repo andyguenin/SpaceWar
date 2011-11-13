@@ -1,7 +1,7 @@
 public class Ship implements SWObject{
 
-	private static final int ROCKET_ACCEL = 90;
-	private static final int BULLET_REL = 5;
+	private static final int ROCKET_ACCEL = 150;
+	private static final int BULLET_REL = 250;
 	
 	private double mass;
 	public double[] position;
@@ -10,12 +10,17 @@ public class Ship implements SWObject{
 	private double orientation;
 	private Bullet[] firedBullets;
 	private boolean unlimitedFuel = false;
-	private boolean unlimitedBullets = false;
 	int fuel;
 	int maxBullets;
 	private boolean firingRocket;
+	private double t;
+	private double fps;
+	private int width;
+	private int height;
+	private int spacing = 10;
+	private int sinceLastFired;
 	
-	public Ship(double mass, int x, int y, double orientation, int maxBulletsAlive, int startFuel, int maxBullets)
+	public Ship(double mass, int x, int y, double orientation, int maxBulletsAlive, int startFuel, int maxBullets, double fps, int width, int height)
 	{
 		position = new double[2];
 		velocity = new double[2];
@@ -25,8 +30,6 @@ public class Ship implements SWObject{
 		acceleration[0] = 0;
 		acceleration[0] = 0;
 		this.mass = mass;
-		if(maxBulletsAlive == 0)
-			unlimitedBullets = true;
 		if(startFuel == 0)
 			unlimitedFuel = true;
 		this.fuel = startFuel;
@@ -34,6 +37,11 @@ public class Ship implements SWObject{
 		firingRocket = false;
 		this.maxBullets = maxBullets;
 		this.orientation = orientation;
+		this.fps = fps;
+		t = 1/fps;
+		this.width = width;
+		this.height = height;
+		sinceLastFired = 0;
 		
 	}
 	
@@ -80,25 +88,28 @@ public class Ship implements SWObject{
 	
 	public void fireBullet()
 	{
-		int firstIndex = 0;
-		for(int i = 0; i < firedBullets.length; i++)
+		if(sinceLastFired >= spacing)
 		{
-			if(firedBullets[i] != null)
-				firstIndex++;
-			else
-				i = firedBullets.length;
+			int firstIndex = 0;
+			for(int i = 0; i < firedBullets.length; i++)
+			{
+				if(firedBullets[i] != null)
+					firstIndex++;
+				else
+					i = firedBullets.length;
+			}
+			if(firstIndex == firedBullets.length)
+				if(firedBullets[firstIndex-1] != null)
+					return;
+			firedBullets[firstIndex] = new Bullet((int)(position[0] - Math.cos(orientation) * 20) , (int)(position[1] + Math.sin(orientation) * 20), (int)(velocity[0] - Math.cos(orientation) * BULLET_REL), (int)(velocity[1] + Math.sin(orientation) * BULLET_REL), fps);
+			sinceLastFired = 0;
 		}
-		if(firstIndex == firedBullets.length)
-			if(firedBullets[firstIndex] != null)
-				return;
-		firedBullets[firstIndex] = new Bullet((int)(position[0]) + (int)Math.cos(orientation) * BULLET_REL , (int)(position[1]) + (int)Math.cos(orientation) * BULLET_REL, velocity[0] + (int)Math.cos(orientation) * BULLET_REL, velocity[1] + (int)Math.sin(orientation) * BULLET_REL);
-		
 	}
 		
 	private void accelerate()
 	{
-		double x = Math.cos(orientation)*ROCKET_ACCEL;
-		double y = Math.sin(orientation)*ROCKET_ACCEL;
+		double x = -Math.cos(orientation)*ROCKET_ACCEL*(firingRocket?1:0);
+		double y = Math.sin(orientation)*ROCKET_ACCEL*(firingRocket?1:0);
 		acceleration[0] += x;
 		acceleration[1] += y;
 		firingRocket = false;
@@ -110,7 +121,7 @@ public class Ship implements SWObject{
 	}
 
 	@Override
-	public void step(double t) {
+	public void step() {
 		accelerate();
 		velocity[0] += acceleration[0] * t;
 		velocity[1] += acceleration[1] * t;
@@ -121,6 +132,14 @@ public class Ship implements SWObject{
 		position[0] = Math.abs((position[0] + 1200) % 800) - 400;
 		position[1] = Math.abs((position[1] + 1200) % 800) - 400;
 		
+		for(int i = 0; i < firedBullets.length; i++)
+		{
+			if(firedBullets[i] !=null && firedBullets[i].isDead())
+				firedBullets[i] = null;
+		}
+		
+		sinceLastFired++;
+		
 	}
 	
 	public Bullet[] getBullets()
@@ -128,13 +147,29 @@ public class Ship implements SWObject{
 		return firedBullets; 
 	}
 	
-	public boolean collision(int x, int y)
+	public boolean collision(int xo, int yo)
 	{
-		if(((x*x)/(400.0) + (y*y) / (81.0)) < 1)
+		int x = (int)(position[0] - xo);
+		int y = (int)(position[1] - yo);
+		if(((x*x)/(81.0) + (y*y) / (400.0)) < 1)
 			return true;
 		return false;
 		
 	}
+	
+	public int getWidth()
+	{
+		return width;
+	}
+	
+	public int getHeight()
+	{
+		return height;
+	}
 
+	public boolean isBoosting()
+	{
+		return firingRocket;
+	}
 }
 
